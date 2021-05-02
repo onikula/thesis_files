@@ -5,6 +5,8 @@ import statistics
 nltk.download('punkt')
 nltk.download('averaged_perceptron_tagger')
 from nltk import word_tokenize, sent_tokenize, pos_tag, RegexpParser
+# import sklearn
+# from sklearn import preprocessing
 
 # import stanza
 # stanza.download('en') 
@@ -64,6 +66,7 @@ text_file = args.filename
 with open(text_file, 'r') as fp:
     text = fp.read()
 
+characters = len(text)
 articles = text.split('\n\n')
 #article = articles.split('\n\n')
 
@@ -84,7 +87,9 @@ POS_list_dict = { t: [] for t in POS_list}
 med_depth = []
 med_vp_depth = []
 med_np_depth = []
-
+emotion_list = ['anger', 'fear', 'disgust','sadness', 'negative', 'anticipation', 'trust', 'surprise', 'joy', 'positive']
+emotion_list_dict = {e: [] for e in emotion_list}
+top_emotion = []
 
 
 def main(article):
@@ -202,9 +207,18 @@ def main(article):
     def nrc_emotions():
         text_object = NRCLex(article)
         #print((text_object.affect_dict))
-        print(text_object.raw_emotion_scores)
+        #print(text_object.raw_emotion_scores)
         print(text_object.top_emotions)
-        print(text_object.affect_frequencies)
+        #print(text_object.affect_frequencies)
+        for ee in emotion_list:
+            for key, value in text_object.raw_emotion_scores.items():
+                if key == ee:
+                    emotion_list_dict[ee].append(value)
+            if ee not in text_object.raw_emotion_scores.keys():
+                emotion_list_dict[ee].append(0)
+        #top_emotion.append(text_object.top_emotions[0:key])
+        #print((emotion_list_dict))
+
         # works best for unicode text, work on this later
 
     def word_tokens():
@@ -308,19 +322,55 @@ df = pd.DataFrame(
                 "Med_depth": med_depth,
                 "Med_np_depth": med_np_depth,
                 "Med_vp_depth": med_vp_depth,
-                 
             }
         )
 
 for key, value in POS_list_dict.items():
     df[key] = value
 
+for key, value in emotion_list_dict.items():
+    df[key] = value
+
+#df["top_emotion"] = top_emotion
+
+# nt: normalised to token counts
+# nc: normalised to character counts
+# numsennorm = preprocessing.normalize(num_sentences)
+# numpuncnorm = preprocessing.normalize(punctuations)
+# numquotnorm = preprocessing.normalize(quotations)
+# numcapsnorm = preprocessing.normalize(caps)
+# numstopnorm = preprocessing.normalize(stoppwords)
+
+# df_norm = pd.DataFrame(
+#             {
+#                 "Title_Length": title_lengths,
+#                 "Num_tokens": tokens_article,
+#                 "TTR": ttr_article,
+#                 "Num_sentences_nt": numsennorm,
+#                 "WPS": words_sentences,
+#                 "FK_scores": f_scores,
+#                 "GF_scores": g_scores,
+#                 "Smog_scores": s_scores,
+#                 "Num_punctuations_nc": numpuncnorm,
+#                 "Num_quotations_nc": numquotnorm,
+#                 "Num_caps_nt": numcapsnorm,
+#                 "Num_stopwords_nt": numstopnorm,
+#                 # "Med_depth": med_depth,
+#                 # "Med_np_depth": med_np_depth,
+#                 # "Med_vp_depth": med_vp_depth,
+
+                 
+#             }
+#         )
+
+# for key, value in POS_list_dict.items():
+#     df[key] = value
 
 #data <- read.table('fake.csv', sep=',', header=T)
 #df.style.format("{:.4%}")
 
 
 print(df.T)
-
-df.to_csv(r'fake.csv')
-#model_path="jar/englishPCFG.ser.gz
+#print("Tokens: "+ str(sum(tokens_article)))
+#print("Chars: " + str(characters))
+df.to_csv(r'real.csv')
