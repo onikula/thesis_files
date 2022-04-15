@@ -39,6 +39,7 @@ from sentistrength import PySentiStr
 
 import numpy as np 
 import pandas as pd 
+from wordfreq import word_frequency
 
 
 # import java.io.StringReader
@@ -70,9 +71,8 @@ characters = len(text)
 articles = text.split('\n\n')
 #article = articles.split('\n\n')
 
-title_lengths = []
-tokens_article = []
-ttr_article = []
+tokens_body = []
+ttr_body = []
 num_sentences = []
 words_sentences = []
 f_scores = []
@@ -90,26 +90,55 @@ med_np_depth = []
 emotion_list = ['anger', 'fear', 'disgust','sadness', 'negative', 'anticipation', 'trust', 'surprise', 'joy', 'positive']
 emotion_list_dict = {e: [] for e in emotion_list}
 top_emotion = []
+w_frequency = []
+w_frequency_lc = []
+
+title_lengths = []
+tokens_title = []
+ttr_title = []
+# num_sentences_t = []
+# words_sentences_t = []
+# f_scores_t = []
+# g_scores_t = []
+# s_scores_t = []
+# punctuations_t = []
+# quotations_t = []
+# caps_t = []
+# stoppwords_t = []
+# POS_list_dict_t = { s: [] for s in POS_list}
+# med_depth_t = []
+# med_vp_depth_t = []
+# med_np_depth_t = []
+# emotion_list_dict_t = {f: [] for f in emotion_list}
+# top_emotion_t = []
+# w_frequency_t = []
+# w_frequency_lc_t = []
 
 
 def main(article):
     article = article
-    sentences = sent_tokenize(article)
-    # remember to remove title as a sentence?
     lines = article.split('\n')
     title = lines[0]
+    del lines[0]
+    body = ".".join(lines)
     title_words = title.split(' ')
     title_lengths.append(len(title_words))
     #print("Title: " + title)
     #print("Title length: " + str(len(title_words)))
-    tokens = word_tokenize(article)
-    lemmas = ld.flemmatize(article)
+    sentences = sent_tokenize(body)
+    tokens = word_tokenize(body)
+    lemmas = ld.flemmatize(body)
     #print("Number of tokens article:" + str(len(tokens)))
-    tokens_article.append(len(tokens))
+    tokens_body.append(len(tokens))
     #print("TTR of article:" + str(ld.ttr(lemmas)))
-    ttr_article.append(ld.ttr(lemmas))
-    #senti = PySentiStr()
-    #result = senti.getSentiment(x)
+    ttr_body.append(ld.ttr(lemmas))
+    sentences_t = sent_tokenize(title)
+    #tokens_t = word_tokenize(title)
+    #lemmas_t = ld.flemmatize(title)
+    #print("Number of tokens article:" + str(len(tokens)))
+    tokens_title.append(len(title))
+    #print("TTR of article:" + str(ld.ttr(lemmas)))
+    ttr_title.append(ld.ttr(title))
 
     def syntax_depth():
         depths = []
@@ -121,6 +150,7 @@ def main(article):
                 sentence = sentence.replace(i, "")
             #print(sentence)
             parses = parset.parse(sentence.split())
+            #if error raise HTTPError(http_error_msg, response=self)
             #print(parses)
             p = list(parses)
             #t = Tree.fromstring(p[0])
@@ -163,11 +193,40 @@ def main(article):
         med_np_depth.append(mediannp)
         #print("Median syntax tree depth: " + str(med_depth))
 
-            
-            
+    # def syntax_depth_t():
+    #     depths = []
+    #     VP_depths = []
+    #     NP_depths = []
+    #     for sentence in sentences_t:
+    #         bad_chars = ["%"]
+    #         for i in bad_chars:
+    #             sentence = sentence.replace(i, "")
+    #         parses = parset.parse(sentence.split())
+    #         p = list(parses)
+    #         print("***********")
+    #         root = p[0]
+    #         VP_subdepths = []
+    #         NP_subdepths = []
+    #         for phrase in root.subtrees(lambda t: t.label() == "S"):
+    #             for fraasi in phrase.subtrees(lambda t: t.label() == "VP"):
+    #                 VP_subdepths.append(fraasi.height())
+    #             for fraasi in phrase.subtrees(lambda t: t.label() == "NP"):
+    #                 NP_subdepths.append(fraasi.height())
+    #             if len(VP_subdepths) > 0:
+    #                 VP_depths.append(max(VP_subdepths))    
+    #             if len(NP_subdepths) > 0:
+    #                 NP_depths.append(max(NP_subdepths)) 
+    #         depths.append(p[0].height())
+    #     medians = statistics.median(depths)
+    #     med_depth_t.append(medians)
+    #     medianvp = statistics.median(VP_depths)
+    #     med_vp_depth_t.append(medianvp)
+    #     mediannp = statistics.median(NP_depths)
+    #     med_np_depth_t.append(mediannp)
 
     def words_per_sentence():
         summa = 0
+        summa_t = 0
         #print("Sentences in article: " + str(len(sentences)))
         num_sentences.append(len(sentences))
         for sentence in sentences:
@@ -179,6 +238,7 @@ def main(article):
             summa += len(words)
         #print(f"Average amount of words per sentence: {(summa/len(sentences)):.2f}")
         words_sentences.append(summa/len(sentences))
+        #words_sentences_t.append()
         
     def readable():  
         r = Readability(article)
@@ -196,20 +256,17 @@ def main(article):
             #print("Not enough sentences to compute Smog score.")
             s_scores.append("NaN")
 
-# The original SMOG formula uses a sample of 30 sentences from the original text. 
-# However, the formula can be generalized to any number of sentences. 
-# You can use the generalized formula by passing the all_sentences=True 
-# argument to smog()
-# call:
-# r.smog(all_sentences=True)
-
 
     def nrc_emotions():
         text_object = NRCLex(article)
-        #print((text_object.affect_dict))
-        #print(text_object.raw_emotion_scores)
-        print(text_object.top_emotions)
-        #print(text_object.affect_frequencies)
+        print("+++++++++++")
+        #print(text_object.affect_dict) # e.g. church': ['anticipation', 'joy', 'positive', 'trust'], 'law': ['trust'], 'effort': ['positive'], 'force': ['anger', 'fear', 'negative'],
+        #print(text_object.raw_emotion_scores) # anticipation: 23, joy: 34 etc.
+        print(text_object.top_emotions) # [('positive', 0.21008403361344538)]
+        print(text_object.affect_frequencies) # 'fear': 0.12184873949579832, 'anger': 0.058823529411764705, 'anticip': 0.0, 'trust': 0.1806722689075630
+        #("{%.2f}".format(text_object.affect_frequencies)) 
+        # obtain the frequencies of each emotion within our tweets/ proportion out of 1
+        print("**************")
         for ee in emotion_list:
             for key, value in text_object.raw_emotion_scores.items():
                 if key == ee:
@@ -275,6 +332,32 @@ def main(article):
                 #maybe refine to amount of each stopword, not just cumulative together
         #print("Stopwords in article: " + str(count_sw))
         stoppwords.append(count_sw)
+
+    def fluency():
+        freqs = []
+        total = 0
+        words = article.split(' ')
+        for word in words:
+            freq = word_frequency(word, 'en')
+            freqs.append(freq)
+            total += freq
+        freq_avg = total/len(words)
+        # average frequency of all words in article
+        for i in freqs:
+            if i == 0:
+                freqs.remove(i)
+        lc = sorted(freqs)
+        for j in lc:
+            if j == 0:
+                lc.remove(j)
+        lc2 = lc[:3]
+        freq_avg_lc = (lc2[0] + lc2[1] + lc2[2])/3
+        # average frequency of least common 3 words in article
+        w_frequency.append(freq_avg)
+        w_frequency_lc.append(freq_avg_lc)
+        print("#####")
+        print(w_frequency)
+        print(w_frequency_lc)
     
     words_per_sentence()
     readable()
@@ -282,7 +365,9 @@ def main(article):
     word_tokens()
     stop_words()
     syntax_depth()
-    #print()
+    #syntax_depth_t()
+    fluency()
+    print()
 
 
 j = 1    
@@ -303,13 +388,13 @@ for i in articles:
 # print(quotations)
 # print(caps)
 # print(stoppwords)
-#print(POS_list_dict)
+# print(POS_list_dict)
 
 df = pd.DataFrame(
             {
                 "Title_Length": title_lengths,
-                "Num_tokens": tokens_article,
-                "TTR": ttr_article,
+                "Num_tokens": tokens_body,
+                "TTR": ttr_body,
                 "Num_sentences": num_sentences,
                 "WPS": words_sentences,
                 "FK_scores": f_scores,
@@ -322,6 +407,8 @@ df = pd.DataFrame(
                 "Med_depth": med_depth,
                 "Med_np_depth": med_np_depth,
                 "Med_vp_depth": med_vp_depth,
+                "Word_frequency": w_frequency, 
+                "LC_frequency": w_frequency_lc,
             }
         )
 
@@ -332,6 +419,10 @@ for key, value in emotion_list_dict.items():
     df[key] = value
 
 #df["top_emotion"] = top_emotion
+
+
+# Complexity features: words per sentencs, syntax tree depth, NP syntax depth, Vp syntax depth, Gunning Fog, SMOG, Flesh, TTR
+# Psychological features: LIWC --> NRC Emotions, SentiStrength =?
 
 # nt: normalised to token counts
 # nc: normalised to character counts
@@ -373,4 +464,4 @@ for key, value in emotion_list_dict.items():
 print(df.T)
 #print("Tokens: "+ str(sum(tokens_article)))
 #print("Chars: " + str(characters))
-df.to_csv(r'real.csv')
+df.to_csv(r'fake.csv')
